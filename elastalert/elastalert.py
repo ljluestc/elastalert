@@ -1371,15 +1371,17 @@ class ElastAlerter(object):
         # Add filter for query_key value
         if 'query_key' in rule:
             for qk in rule.get('compound_query_key', [rule['query_key']]):
-                if qk in match:
-                    term = {'term': {qk: match[qk]}}
+                qk_value = lookup_es_key(match, qk)
+                if qk_value is not None:
+                    term = {'term': {qk: qk_value}}
                     kibana.add_filter(db, term)
 
         # Add filter for aggregation_key value
         if 'aggregation_key' in rule:
             for qk in rule.get('compound_aggregation_key', [rule['aggregation_key']]):
-                if qk in match:
-                    term = {'term': {qk: match[qk]}}
+                qk_value = lookup_es_key(match, qk)
+                if qk_value is not None:
+                    term = {'term': {qk: qk_value}}
                     kibana.add_filter(db, term)
 
         # Convert to json

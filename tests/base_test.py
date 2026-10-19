@@ -990,6 +990,30 @@ def test_kibana_dashboard(ea):
                 continue
         assert found_filters == 2
 
+        # Compound query key with nested fields
+        ea.rules[0]['query_key'] = 'user.name,host.name'
+        ea.rules[0]['compound_query_key'] = ['user.name', 'host.name']
+        match['user'] = {'name': 'alice'}
+        match['host'] = {'name': 'web01'}
+        match['user.name,host.name'] = 'alice, web01'
+        url = ea.use_kibana_link(ea.rules[0], match)
+        db = json.loads(mock_es.index.call_args_list[-1][1]['body']['dashboard'])
+        filters = [(f.get('field'), f.get('query')) for f in db['services']['filter']['list'].values()]
+        assert ('user.name', '"alice"') in filters
+        assert ('host.name', '"web01"') in filters
+        assert ('user.name,host.name', '"alice, web01"') not in filters
+
+        # Compound aggregation key with nested fields
+        del ea.rules[0]['query_key']
+        del ea.rules[0]['compound_query_key']
+        ea.rules[0]['aggregation_key'] = 'user.name,host.name'
+        ea.rules[0]['compound_aggregation_key'] = ['user.name', 'host.name']
+        url = ea.use_kibana_link(ea.rules[0], match)
+        db = json.loads(mock_es.index.call_args_list[-1][1]['body']['dashboard'])
+        filters = [(f.get('field'), f.get('query')) for f in db['services']['filter']['list'].values()]
+        assert ('user.name', '"alice"') in filters
+        assert ('host.name', '"web01"') in filters
+
 
 def test_rule_changes(ea):
     ea.rule_hashes = {'rules/rule1.yaml': 'ABC',
